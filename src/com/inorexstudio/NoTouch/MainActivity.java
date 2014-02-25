@@ -28,7 +28,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		findViewById(R.id.prev).setOnClickListener(this);
 		findViewById(R.id.pause).setOnClickListener(this);
 		findViewById(R.id.next).setOnClickListener(this);
+		
+		startService(new Intent(getBaseContext(), GestureRecognizerService.class));
 	}
+
+	
+
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
+		stopService(new Intent(getBaseContext(), GestureRecognizerService.class));
+	}
+
+
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
