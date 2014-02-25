@@ -1,13 +1,11 @@
 package com.inorexstudio.NoTouch;
 
-import android.media.AudioManager;
 import android.os.Bundle;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 import android.view.*;
 import android.widget.Button;
 import android.widget.Toast;
@@ -40,7 +38,6 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View arg0) {
 				startService(new Intent(getBaseContext(),GestureRecognizerService.class));
-				//doBindService();
 				start.setEnabled(false);
 				stop.setEnabled(true);
 				Toast.makeText(MainActivity.this, "NoTouch Activated!", Toast.LENGTH_SHORT).show();
@@ -54,15 +51,12 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View arg0) {
 				stopService(new Intent(getBaseContext(),GestureRecognizerService.class));
-				//doUnbindService();
 				stop.setEnabled(false);
 				start.setEnabled(true);
 				Toast.makeText(MainActivity.this, "NoTouch Stopped", Toast.LENGTH_SHORT).show();
 
 			}
 		});
-		
-		//startService(new Intent(getBaseContext(), GestureRecognizerService.class));
 	}
 
 	
@@ -71,7 +65,6 @@ public class MainActivity extends Activity {
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
 		super.onDestroy();
-		//stopService(new Intent(getBaseContext(), GestureRecognizerService.class));
 	}
 
 
