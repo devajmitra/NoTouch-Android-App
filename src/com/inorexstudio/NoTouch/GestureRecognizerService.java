@@ -1,5 +1,7 @@
 package com.inorexstudio.NoTouch;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +13,7 @@ import android.media.AudioManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -36,6 +39,7 @@ public class GestureRecognizerService extends Service implements
 		proxSensor = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 		sm.registerListener(GestureRecognizerService.this, proxSensor,
 				SensorManager.SENSOR_DELAY_NORMAL);
+		makeForeground();
 	}
 
 	@Override
@@ -50,7 +54,29 @@ public class GestureRecognizerService extends Service implements
 		super.onDestroy();
 		sm.unregisterListener(GestureRecognizerService.this, proxSensor);
 	}
+	
+	private void makeForeground() {
+		/*Notification notification = new Notification(R.drawable.icon, getText(R.string.ticker_text),
+		        System.currentTimeMillis());
+		Intent notificationIntent = new Intent(this, ExampleActivity.class);
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		notification.setLatestEventInfo(this, getText(R.string.notification_title),
+		        getText(R.string.notification_message), pendingIntent);*/
+		NotificationCompat.Builder notiBuilder = new NotificationCompat.Builder(this);
+		Intent notificationIntent = new Intent(this, MainActivity.class);
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		Notification notification = notiBuilder.setContentTitle("NoTouch Smart Gestures")
+					.setContentText("Gesture Recognition On")
+					.setSmallIcon(R.drawable.ic_launcher)
+					.setContentIntent(pendingIntent)
+					.setTicker("NoTouch Smart Gestures Active")
+					.build();
+		startForeground(4242, notification);
+	}
 
+	private void removeForeground() {
+		stopForeground(true);
+	}
 	private final IBinder mBinder = new LocalBinder();
 
 	@Override
@@ -114,6 +140,7 @@ public class GestureRecognizerService extends Service implements
 		} else {
 			Log.e("proximity", "no obstacle");
 			//nextSong();
+			removeForeground();
 		}
 	}
 
