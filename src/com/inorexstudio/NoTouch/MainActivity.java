@@ -67,7 +67,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			Log.e("e", "pause");
 
 			if (mAudioManager.isMusicActive()) {
-				Intent i = new Intent(SERVICECMD);
+				Intent i = new Intent("com.android.music.musicservicecommand.togglepause");
 				i.putExtra(CMDNAME, CMDTOGGLEPAUSE);
 				MainActivity.this.sendBroadcast(i);
 			}
@@ -76,7 +76,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			Log.e("e", "next");
 			if (mAudioManager.isMusicActive()) {
 				Intent i = new Intent(SERVICECMD);
-				i.putExtra(CMDNAME, CMDNEXT);
+				i.putExtra(CMDNAME, "next");
 				MainActivity.this.sendBroadcast(i);
 			}
 			break;
