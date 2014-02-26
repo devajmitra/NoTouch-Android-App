@@ -11,22 +11,16 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.widget.Toast;
 
 public class GestureRecognizerService extends Service implements
 		SensorEventListener {
-	public static final String CMDTOGGLEPAUSE = "togglepause";
-	public static final String CMDPAUSE = "pause";
-	public static final String CMDPREVIOUS = "previous";
-	public static final String CMDNEXT = "next";
-	public static final String SERVICECMD = "com.android.music.musicservicecommand";
-	public static final String CMDNAME = "command";
-	public static final String CMDSTOP = "stop";
-
 	AudioManager mAudioManager;
 	SensorManager sm;
 	Sensor proxSensor;
@@ -54,89 +48,27 @@ public class GestureRecognizerService extends Service implements
 		super.onDestroy();
 		sm.unregisterListener(GestureRecognizerService.this, proxSensor);
 	}
-	
+
 	private void makeForeground() {
-		NotificationCompat.Builder notiBuilder = new NotificationCompat.Builder(this);
+		NotificationCompat.Builder notiBuilder = new NotificationCompat.Builder(
+				this);
 		Intent notificationIntent = new Intent(this, MainActivity.class);
-		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-		Notification notification = notiBuilder.setContentTitle("NoTouch Smart Gestures")
-					.setContentText("Gesture Recognition On")
-					.setSmallIcon(R.drawable.ic_launcher)
-					.setContentIntent(pendingIntent)
-					.setTicker("NoTouch Smart Gestures Active")
-					.build();
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+				notificationIntent, 0);
+		Notification notification = notiBuilder
+				.setContentTitle("NoTouch Smart Gestures")
+				.setContentText("Gesture Recognition On")
+				.setSmallIcon(R.drawable.ic_launcher)
+				.setContentIntent(pendingIntent)
+				.setTicker("NoTouch Smart Gestures Active").build();
 		startForeground(4242, notification);
 	}
 
 	private void removeForeground() {
 		stopForeground(true);
 	}
+
 	private final IBinder mBinder = new LocalBinder();
-
-	@Override
-	public void onAccuracyChanged(Sensor arg0, int arg1) {
-		// TODO Auto-generated method stub
-
-	}
-	
-	private void nextSong() {
-		long eventtime = SystemClock.uptimeMillis();
-		
-		Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-		KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN,   KeyEvent.KEYCODE_MEDIA_NEXT, 0);
-		downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
-		sendOrderedBroadcast(downIntent, null);
-	
-		Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-		KeyEvent upEvent = new KeyEvent(eventtime, eventtime,
-				KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_NEXT, 0);
-		upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
-		sendOrderedBroadcast(upIntent, null);
-	}
-
-	private void prevSong() {
-		long eventtime = SystemClock.uptimeMillis();
-		
-		Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-		KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0);
-		downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
-		sendOrderedBroadcast(downIntent, null);
-	
-		Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-		KeyEvent upEvent = new KeyEvent(eventtime, eventtime,
-				KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0);
-		upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
-		sendOrderedBroadcast(upIntent, null);
-	}
-	
-	private void playPause() {
-		long eventtime = SystemClock.uptimeMillis();
-		
-		Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-		KeyEvent downEvent = new KeyEvent(eventtime, eventtime,
-				KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0);
-		downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
-		sendOrderedBroadcast(downIntent, null);
-
-		Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
-		KeyEvent upEvent = new KeyEvent(eventtime, eventtime,
-				KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0);
-		upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
-		sendOrderedBroadcast(upIntent, null);
-	}
-
-	@Override
-	public void onSensorChanged(SensorEvent event) {
-		// TODO Auto-generated method stub
-
-		if (event.values[0] == 0) {
-			Log.e("proximity", "obstacle detected");
-		} else {
-			Log.e("proximity", "no obstacle");
-			//nextSong();
-			removeForeground();
-		}
-	}
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -148,5 +80,125 @@ public class GestureRecognizerService extends Service implements
 		public GestureRecognizerService getService() {
 			return GestureRecognizerService.this;
 		}
+	}
+
+	@Override
+	public void onAccuracyChanged(Sensor arg0, int arg1) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private long gestureStartTime, gestureEndTime;
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		// TODO Auto-generated method stub
+		if (event.values[0] == 0) {
+			Log.e("proximity", "obstacle detected");
+			gestureStartTime = System.nanoTime();
+
+		} else {
+			Log.e("proximity", "no obstacle");
+			gestureEndTime = System.nanoTime();
+			long gesturePeriod = gestureEndTime - gestureStartTime;
+			long gesturePeriodMillis = gesturePeriod / 1000000;
+			
+			if (gesturePeriodMillis > 100 && gesturePeriodMillis <= 750) {
+				Log.e("gesture", "wave");
+				onWaveGesture();
+			} else if (gesturePeriodMillis > 750 && gesturePeriodMillis < 2000) {
+				Log.e("gesture", "hover");
+				onHoverGesture();
+			}
+		}
+	}
+
+	private int waveCount = 0;
+	static final int MAXWAVES = 2;
+	private void onWaveGesture() {
+		waveCount++;
+		
+		if(waveCount == 1) {
+			final Handler handler = new Handler();
+			handler.postDelayed(new Runnable() {
+				  @Override
+				  public void run() {
+				    //Do something after 1000ms
+					  finishWaveGesture();
+				  }
+				}, 760*(MAXWAVES - 1));
+		}
+	}
+	
+	private void finishWaveGesture() {
+		switch(waveCount) {
+		case 1:
+			Log.e("wave", "Single wave");
+			nextSong();
+			break;
+		case 2:
+			Log.e("wave", "Double  wave");
+			prevSong();
+			break;
+		}
+		waveCount = 0;
+	}
+	
+	private void onHoverGesture() {
+		playPause();
+	}
+
+	private void nextSong() {
+		if (mAudioManager.isMusicActive()) {
+			long eventtime = SystemClock.uptimeMillis();
+
+			Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+			KeyEvent downEvent = new KeyEvent(eventtime, eventtime,
+					KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_NEXT, 0);
+			downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
+			sendOrderedBroadcast(downIntent, null);
+
+			Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+			KeyEvent upEvent = new KeyEvent(eventtime, eventtime,
+					KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_NEXT, 0);
+			upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
+			sendOrderedBroadcast(upIntent, null);
+			Toast.makeText(getBaseContext(), "Next Song", Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	private void prevSong() {
+		if (mAudioManager.isMusicActive()) {
+			long eventtime = SystemClock.uptimeMillis();
+
+			Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+			KeyEvent downEvent = new KeyEvent(eventtime, eventtime,
+					KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0);
+			downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
+			sendOrderedBroadcast(downIntent, null);
+
+			Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+			KeyEvent upEvent = new KeyEvent(eventtime, eventtime,
+					KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0);
+			upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
+			sendOrderedBroadcast(upIntent, null);
+			Toast.makeText(getBaseContext(), "Previous Song", Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	private void playPause() {
+		long eventtime = SystemClock.uptimeMillis();
+
+		Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+		KeyEvent downEvent = new KeyEvent(eventtime, eventtime,
+				KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0);
+		downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
+		sendOrderedBroadcast(downIntent, null);
+
+		Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+		KeyEvent upEvent = new KeyEvent(eventtime, eventtime,
+				KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0);
+		upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
+		sendOrderedBroadcast(upIntent, null);
+		Toast.makeText(getBaseContext(), "Play/Pause", Toast.LENGTH_SHORT).show();
 	}
 }

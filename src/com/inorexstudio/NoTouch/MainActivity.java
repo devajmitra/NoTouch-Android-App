@@ -59,15 +59,11 @@ public class MainActivity extends Activity {
 		});
 	}
 
-	
-
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
 		super.onDestroy();
 	}
-
-
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
